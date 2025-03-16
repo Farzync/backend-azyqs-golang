@@ -2,8 +2,11 @@ package main
 
 import (
 	"encoding/json"
+	"flag"
+	"fmt"
 	"log"
 	"net/http"
+	"os"
 
 	"azyqs-auth-systems/config"
 	"azyqs-auth-systems/models"
@@ -26,6 +29,19 @@ func main() {
 		log.Println("Tidak menemukan file .env, pastikan environment variable sudah di-set")
 	}
 
+	// Argument flag untuk port dengan default 8080
+	port := flag.String("port", "", "Port untuk server (default dari .env atau 8080)")
+	flag.Parse()
+
+	// Jika tidak ada argumen port, cek dari environment, lalu fallback ke 8080
+	finalPort := *port
+	if finalPort == "" {
+		finalPort = os.Getenv("PORT")
+		if finalPort == "" {
+			finalPort = "8080"
+		}
+	}
+
 	// Inisialisasi koneksi database
 	db := config.InitDB()
 	db.AutoMigrate(&models.User{})
@@ -40,10 +56,10 @@ func main() {
 		w.WriteHeader(http.StatusNotFound)
 		json.NewEncoder(w).Encode(Response{
 			Status:  "error",
-			Message: "route tidak ditemukan",
+			Message: "route_not_found",
 		})
 	})
 
-	log.Println("Server berjalan di port 8080...")
-	log.Fatal(http.ListenAndServe(":8080", router))
+	log.Printf("Server berjalan di port %s...\n", finalPort)
+	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%s", finalPort), router))
 }
