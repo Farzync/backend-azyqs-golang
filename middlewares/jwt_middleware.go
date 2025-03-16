@@ -9,45 +9,60 @@ import (
 	"azyqs-auth-systems/utils"
 )
 
-// Response standar
-type Response struct {
-	Status  string      `json:"status"`
-	Message string      `json:"message"`
-	Data    interface{} `json:"data,omitempty"`
+// ErrorResponse defines the standard error response structure
+type ErrorResponse struct {
+	Status  string `json:"status"`
+	Message string `json:"message"`
 }
 
-// writeJSON membantu menulis response dengan format JSON
+// writeJSON helps write a JSON response with a consistent format
 func writeJSON(w http.ResponseWriter, statusCode int, status, message string) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(statusCode)
-	json.NewEncoder(w).Encode(Response{
+	json.NewEncoder(w).Encode(ErrorResponse{
 		Status:  status,
 		Message: message,
 	})
 }
 
-// JwtAuthentication memeriksa token JWT di header Authorization
+// Define a custom type for the context key
+type contextKey string
+
+const userIDKey contextKey = "userID"
+
+// JwtAuthentication validates the JWT token in the Authorization header
 func JwtAuthentication(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		tokenHeader := r.Header.Get("Authorization")
+		
 		if tokenHeader == "" {
-			writeJSON(w, http.StatusForbidden, "error", "Token tidak ditemukan")
+			writeJSON(w, http.StatusForbidden, "error", "token_not_found")
 			return
 		}
-		// Format yang umum: "Bearer {token}"
+
+		// Common format: "Bearer {token}"
 		splitted := strings.Split(tokenHeader, " ")
 		if len(splitted) != 2 {
-			writeJSON(w, http.StatusForbidden, "error", "Format token tidak valid")
+			writeJSON(w, http.StatusForbidden, "error", "token_invalid_format")
 			return
 		}
+
 		tokenPart := splitted[1]
 		userID, err := utils.ValidateJWT(tokenPart)
 		if err != nil {
-			writeJSON(w, http.StatusForbidden, "error", "Token tidak valid")
+			switch err.Error() {
+			case "token_expired":
+				writeJSON(w, http.StatusForbidden, "error", "token_expired")
+			case "token_invalid_signature":
+				writeJSON(w, http.StatusForbidden, "error", "token_invalid_signature")
+			default:
+				writeJSON(w, http.StatusForbidden, "error", "token_invalid")
+			}
 			return
 		}
-		// Masukkan userID ke dalam context
-		ctx := context.WithValue(r.Context(), "userID", userID)
+
+		// Pass the userID into the request context
+		ctx := context.WithValue(r.Context(), userIDKey, userID)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }
