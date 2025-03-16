@@ -6,14 +6,24 @@ import (
 	"net/http"
 )
 
-// Response standar
+// Standard API response structure
 type Response struct {
 	Status  string      `json:"status"`
 	Message string      `json:"message"`
 	Data    interface{} `json:"data,omitempty"`
 }
 
-// Register: POST /register
+func writeJSON(w http.ResponseWriter, statusCode int, status, message string, data interface{}) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(statusCode)
+	json.NewEncoder(w).Encode(Response{
+		Status:  status,
+		Message: message,
+		Data:    data,
+	})
+}
+
+// Register: POST /auth/register
 func Register(w http.ResponseWriter, r *http.Request) {
 	var userInput struct {
 		Username string `json:"username"`
@@ -22,54 +32,50 @@ func Register(w http.ResponseWriter, r *http.Request) {
 		Password string `json:"password"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&userInput); err != nil {
-		json.NewEncoder(w).Encode(Response{Status: "error", Message: "Input tidak valid"})
+		writeJSON(w, http.StatusBadRequest, "error", "invalid_input", nil)
 		return
 	}
 
 	err := services.RegisterUser(userInput.Username, userInput.Name, userInput.Email, userInput.Password)
 	if err != nil {
-		json.NewEncoder(w).Encode(Response{Status: "error", Message: err.Error()})
+		writeJSON(w, http.StatusBadRequest, "error", err.Error(), nil)
 		return
 	}
-	json.NewEncoder(w).Encode(Response{Status: "success", Message: "Registrasi berhasil"})
+	writeJSON(w, http.StatusOK, "success", "registration_successful", nil)
 }
 
-// Login: POST /login
+// Login: POST /auth/login
 func Login(w http.ResponseWriter, r *http.Request) {
 	var input struct {
 		Username string `json:"username"`
 		Password string `json:"password"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
-		json.NewEncoder(w).Encode(Response{Status: "error", Message: "Input tidak valid"})
+		writeJSON(w, http.StatusBadRequest, "error", "invalid_input", nil)
 		return
 	}
 
 	token, err := services.LoginUser(input.Username, input.Password)
 	if err != nil {
-		json.NewEncoder(w).Encode(Response{Status: "error", Message: err.Error()})
+		writeJSON(w, http.StatusUnauthorized, "error", err.Error(), nil)
 		return
 	}
 
-	json.NewEncoder(w).Encode(Response{
-		Status:  "success",
-		Message: "Login berhasil",
-		Data:    map[string]string{"token": token},
-	})
+	writeJSON(w, http.StatusOK, "success", "login_successful", map[string]string{"token": token})
 }
 
-// View Profile: GET /profile
+// View Profile: GET /user/profile
 func ViewProfile(w http.ResponseWriter, r *http.Request) {
 	userID := r.Context().Value("userID")
 	user, err := services.GetUserByID(userID.(uint))
 	if err != nil {
-		json.NewEncoder(w).Encode(Response{Status: "error", Message: err.Error()})
+		writeJSON(w, http.StatusNotFound, "error", "user_not_found", nil)
 		return
 	}
-	json.NewEncoder(w).Encode(Response{Status: "success", Message: "Profile ditemukan", Data: user})
+	writeJSON(w, http.StatusOK, "success", "profile_found", user)
 }
 
-// Edit Profile: PUT /profile
+// Edit Profile: PUT /user/profile
 func EditProfile(w http.ResponseWriter, r *http.Request) {
 	userID := r.Context().Value("userID")
 	var input struct {
@@ -78,37 +84,36 @@ func EditProfile(w http.ResponseWriter, r *http.Request) {
 		Email    string `json:"email"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
-		json.NewEncoder(w).Encode(Response{Status: "error", Message: "Input tidak valid"})
+		writeJSON(w, http.StatusBadRequest, "error", "invalid_input", nil)
 		return
 	}
 	err := services.UpdateUserProfile(userID.(uint), input.Username, input.Name, input.Email)
 	if err != nil {
-		json.NewEncoder(w).Encode(Response{Status: "error", Message: err.Error()})
+		writeJSON(w, http.StatusBadRequest, "error", err.Error(), nil)
 		return
 	}
-	json.NewEncoder(w).Encode(Response{Status: "success", Message: "Profile berhasil diupdate"})
+	writeJSON(w, http.StatusOK, "success", "profile_updated", nil)
 }
 
-
-// Delete Profile: DELETE /profile
+// Delete Profile: DELETE /user/profile
 func DeleteProfile(w http.ResponseWriter, r *http.Request) {
 	userID := r.Context().Value("userID")
 	var input struct {
 		Password string `json:"password"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
-		json.NewEncoder(w).Encode(Response{Status: "error", Message: "Input tidak valid"})
+		writeJSON(w, http.StatusBadRequest, "error", "invalid_input", nil)
 		return
 	}
 	err := services.DeleteUser(userID.(uint), input.Password)
 	if err != nil {
-		json.NewEncoder(w).Encode(Response{Status: "error", Message: err.Error()})
+		writeJSON(w, http.StatusBadRequest, "error", err.Error(), nil)
 		return
 	}
-	json.NewEncoder(w).Encode(Response{Status: "success", Message: "Profile berhasil dihapus"})
+	writeJSON(w, http.StatusOK, "success", "profile_deleted", nil)
 }
 
-// Change Password: PUT /change-password
+// Change Password: PUT /user/change-password
 func ChangePassword(w http.ResponseWriter, r *http.Request) {
 	userID := r.Context().Value("userID")
 	var input struct {
@@ -117,17 +122,17 @@ func ChangePassword(w http.ResponseWriter, r *http.Request) {
 		ConfirmNewPassword string `json:"confirm_new_password"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
-		json.NewEncoder(w).Encode(Response{Status: "error", Message: "Input tidak valid"})
+		writeJSON(w, http.StatusBadRequest, "error", "invalid_input", nil)
 		return
 	}
 	if input.NewPassword != input.ConfirmNewPassword {
-		json.NewEncoder(w).Encode(Response{Status: "error", Message: "Password baru tidak cocok"})
+		writeJSON(w, http.StatusBadRequest, "error", "password_mismatch", nil)
 		return
 	}
 	err := services.ChangeUserPassword(userID.(uint), input.OldPassword, input.NewPassword)
 	if err != nil {
-		json.NewEncoder(w).Encode(Response{Status: "error", Message: err.Error()})
+		writeJSON(w, http.StatusBadRequest, "error", err.Error(), nil)
 		return
 	}
-	json.NewEncoder(w).Encode(Response{Status: "success", Message: "Password berhasil diubah"})
+	writeJSON(w, http.StatusOK, "success", "password_changed", nil)
 }
