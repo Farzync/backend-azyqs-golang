@@ -4,6 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"log"
+	"net"
 	"net/http"
 	"os"
 
@@ -22,17 +23,31 @@ type Response struct {
 	Data    interface{} `json:"data,omitempty"`
 }
 
+func isPortAvailable(port string) bool {
+	ln, err := net.Listen("tcp", ":"+port)
+	if err != nil {
+		return false
+	}
+	_ = ln.Close()
+	return true
+}
+
 func main() {
+	log.Printf("Starting server...")
+
 	// Load .env file if available
+	log.Printf("Loading environment variables...")
 	if err := godotenv.Load(); err != nil {
 		log.Println("No .env file found, make sure environment variables are set")
 	}
 
 	// Command-line flag for server port (default 8080)
+	log.Printf("Parsing command-line arguments...")
 	port := flag.String("port", "", "Server port (default from .env or 8080)")
 	flag.Parse()
 
-	// If no port argument is provided, check environment variables, fallback to 8080
+	// Determine final port
+	log.Printf("Checking server port...")
 	finalPort := *port
 	if finalPort == "" {
 		finalPort = os.Getenv("PORT")
@@ -41,14 +56,21 @@ func main() {
 		}
 	}
 
+	// Check if the port is already in use
+	if !isPortAvailable(finalPort) {
+		log.Fatalf("Port %s is already in use. Please choose a different port.", finalPort)
+	}
+
 	// Initialize database connection
+	log.Printf("Initializing database connection...")
 	db := config.InitDB()
 	db.AutoMigrate(&models.User{})
 
 	// Initialize router
+	log.Printf("Initializing router...")
 	router := mux.NewRouter()
 	routes.RegisterRoutes(router)
 
-	log.Printf("Server is running on port %s...\n", finalPort)
+	log.Printf("Server is up and running on port %s...\n", finalPort)
 	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%s", finalPort), router))
 }
