@@ -67,24 +67,29 @@ func Login(w http.ResponseWriter, r *http.Request) {
 
 // View Profile: GET /user/profile
 func ViewProfile(w http.ResponseWriter, r *http.Request) {
-    userID, ok := r.Context().Value(middlewares.UserIDKey).(uint)
-    if !ok {
-        writeJSON(w, http.StatusUnauthorized, "error", "user_id_not_found", nil)
-        return
-    }
+	userID, ok := r.Context().Value(middlewares.UserIDKey).(uint)
+	if !ok {
+		writeJSON(w, http.StatusUnauthorized, "error", "user_id_not_found", nil)
+		return
+	}
 
-    user, err := services.GetUserByID(userID)
-    if err != nil {
-        writeJSON(w, http.StatusNotFound, "error", "user_not_found", nil)
-        return
-    }
+	user, err := services.GetUserByID(userID)
+	if err != nil {
+		writeJSON(w, http.StatusNotFound, "error", "user_not_found", nil)
+		return
+	}
 
-    writeJSON(w, http.StatusOK, "success", "profile_found", user)
+	writeJSON(w, http.StatusOK, "success", "profile_found", user)
 }
 
 // Edit Profile: PUT /user/profile
 func EditProfile(w http.ResponseWriter, r *http.Request) {
-	userID := r.Context().Value("userID")
+	userID, ok := r.Context().Value(middlewares.UserIDKey).(uint)
+	if !ok {
+		writeJSON(w, http.StatusUnauthorized, "error", "user_id_not_found", nil)
+		return
+	}
+
 	var input struct {
 		Username string `json:"username"`
 		Name     string `json:"name"`
@@ -94,7 +99,8 @@ func EditProfile(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusBadRequest, "error", "invalid_input", nil)
 		return
 	}
-	err := services.UpdateUserProfile(userID.(uint), input.Username, input.Name, input.Email)
+
+	err := services.UpdateUserProfile(userID, input.Username, input.Name, input.Email)
 	if err != nil {
 		writeJSON(w, http.StatusBadRequest, "error", err.Error(), nil)
 		return
@@ -104,7 +110,12 @@ func EditProfile(w http.ResponseWriter, r *http.Request) {
 
 // Delete Profile: DELETE /user/profile
 func DeleteProfile(w http.ResponseWriter, r *http.Request) {
-	userID := r.Context().Value("userID")
+	userID, ok := r.Context().Value(middlewares.UserIDKey).(uint)
+	if !ok {
+		writeJSON(w, http.StatusUnauthorized, "error", "user_id_not_found", nil)
+		return
+	}
+
 	var input struct {
 		Password string `json:"password"`
 	}
@@ -112,7 +123,8 @@ func DeleteProfile(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusBadRequest, "error", "invalid_input", nil)
 		return
 	}
-	err := services.DeleteUser(userID.(uint), input.Password)
+
+	err := services.DeleteUser(userID, input.Password)
 	if err != nil {
 		writeJSON(w, http.StatusBadRequest, "error", err.Error(), nil)
 		return
@@ -122,7 +134,12 @@ func DeleteProfile(w http.ResponseWriter, r *http.Request) {
 
 // Change Password: PUT /user/change-password
 func ChangePassword(w http.ResponseWriter, r *http.Request) {
-	userID := r.Context().Value("userID")
+	userID, ok := r.Context().Value(middlewares.UserIDKey).(uint)
+	if !ok {
+		writeJSON(w, http.StatusUnauthorized, "error", "user_id_not_found", nil)
+		return
+	}
+
 	var input struct {
 		OldPassword        string `json:"old_password"`
 		NewPassword        string `json:"new_password"`
@@ -132,11 +149,13 @@ func ChangePassword(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusBadRequest, "error", "invalid_input", nil)
 		return
 	}
+
 	if input.NewPassword != input.ConfirmNewPassword {
 		writeJSON(w, http.StatusBadRequest, "error", "password_mismatch", nil)
 		return
 	}
-	err := services.ChangeUserPassword(userID.(uint), input.OldPassword, input.NewPassword)
+
+	err := services.ChangeUserPassword(userID, input.OldPassword, input.NewPassword)
 	if err != nil {
 		writeJSON(w, http.StatusBadRequest, "error", err.Error(), nil)
 		return
