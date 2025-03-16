@@ -1,7 +1,6 @@
 package main
 
 import (
-	"encoding/json"
 	"flag"
 	"fmt"
 	"log"
@@ -49,16 +48,6 @@ func main() {
 	// Initialize router
 	router := mux.NewRouter()
 	routes.RegisterRoutes(router)
-
-	// Custom NotFoundHandler for non-existent routes
-	router.NotFoundHandler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusNotFound)
-		json.NewEncoder(w).Encode(Response{
-			Status:  "error",
-			Message: "route_not_found",
-		})
-	})
 
 	log.Printf("Server is running on port %s...\n", finalPort)
 	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%s", finalPort), router))
