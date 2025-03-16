@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"azyqs-auth-systems/middlewares"
 	"azyqs-auth-systems/services"
 	"encoding/json"
 	"net/http"
@@ -66,13 +67,19 @@ func Login(w http.ResponseWriter, r *http.Request) {
 
 // View Profile: GET /user/profile
 func ViewProfile(w http.ResponseWriter, r *http.Request) {
-	userID := r.Context().Value("userID")
-	user, err := services.GetUserByID(userID.(uint))
-	if err != nil {
-		writeJSON(w, http.StatusNotFound, "error", "user_not_found", nil)
-		return
-	}
-	writeJSON(w, http.StatusOK, "success", "profile_found", user)
+    userID, ok := r.Context().Value(middlewares.UserIDKey).(uint)
+    if !ok {
+        writeJSON(w, http.StatusUnauthorized, "error", "user_id_not_found", nil)
+        return
+    }
+
+    user, err := services.GetUserByID(userID)
+    if err != nil {
+        writeJSON(w, http.StatusNotFound, "error", "user_not_found", nil)
+        return
+    }
+
+    writeJSON(w, http.StatusOK, "success", "profile_found", user)
 }
 
 // Edit Profile: PUT /user/profile

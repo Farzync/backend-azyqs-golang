@@ -28,7 +28,7 @@ func writeJSON(w http.ResponseWriter, statusCode int, status, message string) {
 // Define a custom type for the context key
 type contextKey string
 
-const userIDKey contextKey = "userID"
+const UserIDKey contextKey = "userID"
 
 // JwtAuthentication validates the JWT token in the Authorization header
 func JwtAuthentication(next http.Handler) http.Handler {
@@ -62,7 +62,7 @@ func JwtAuthentication(next http.Handler) http.Handler {
 		}
 
 		// Pass the userID into the request context
-		ctx := context.WithValue(r.Context(), userIDKey, userID)
+		ctx := context.WithValue(r.Context(), UserIDKey, userID)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }
