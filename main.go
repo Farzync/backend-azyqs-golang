@@ -16,7 +16,7 @@ import (
 	"github.com/joho/godotenv"
 )
 
-// Response standar
+// Standard response structure
 type Response struct {
 	Status  string      `json:"status"`
 	Message string      `json:"message"`
@@ -24,16 +24,16 @@ type Response struct {
 }
 
 func main() {
-	// Load file .env jika ada
+	// Load .env file if available
 	if err := godotenv.Load(); err != nil {
-		log.Println("Tidak menemukan file .env, pastikan environment variable sudah di-set")
+		log.Println("No .env file found, make sure environment variables are set")
 	}
 
-	// Argument flag untuk port dengan default 8080
-	port := flag.String("port", "", "Port untuk server (default dari .env atau 8080)")
+	// Command-line flag for server port (default 8080)
+	port := flag.String("port", "", "Server port (default from .env or 8080)")
 	flag.Parse()
 
-	// Jika tidak ada argumen port, cek dari environment, lalu fallback ke 8080
+	// If no port argument is provided, check environment variables, fallback to 8080
 	finalPort := *port
 	if finalPort == "" {
 		finalPort = os.Getenv("PORT")
@@ -42,15 +42,15 @@ func main() {
 		}
 	}
 
-	// Inisialisasi koneksi database
+	// Initialize database connection
 	db := config.InitDB()
 	db.AutoMigrate(&models.User{})
 
-	// Inisialisasi router
+	// Initialize router
 	router := mux.NewRouter()
 	routes.RegisterRoutes(router)
 
-	// Custom NotFoundHandler untuk route yang tidak ada
+	// Custom NotFoundHandler for non-existent routes
 	router.NotFoundHandler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusNotFound)
@@ -60,6 +60,6 @@ func main() {
 		})
 	})
 
-	log.Printf("Server berjalan di port %s...\n", finalPort)
+	log.Printf("Server is running on port %s...\n", finalPort)
 	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%s", finalPort), router))
 }
