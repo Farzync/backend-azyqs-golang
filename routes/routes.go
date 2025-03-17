@@ -38,7 +38,7 @@ func writeErrorResponse(w http.ResponseWriter, statusCode int, message string) {
 	})
 }
 
-// loggingMiddleware logs all incoming requests and their response status
+// loggingMiddleware logs all incoming requests
 func loggingMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		lrw := &loggingResponseWriter{ResponseWriter: w, statusCode: http.StatusOK, body: &bytes.Buffer{}}
@@ -47,13 +47,9 @@ func loggingMiddleware(next http.Handler) http.Handler {
 		next.ServeHTTP(lrw, r)
 
 		duration := time.Since(startTime)
-		status := "success"
-		if lrw.statusCode >= 400 {
-			status = "error"
-		}
 
-		log.Printf("[%d] %s %s - %s - Status: %s - Duration: %s - Response: %s",
-			lrw.statusCode, r.Method, r.URL.Path, http.StatusText(lrw.statusCode), status, duration, lrw.body.String())
+		log.Printf("[%d] %s %s - %s - Duration: %s",
+			lrw.statusCode, r.Method, r.URL.Path, http.StatusText(lrw.statusCode), duration)
 	})
 }
 
