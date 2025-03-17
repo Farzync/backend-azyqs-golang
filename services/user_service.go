@@ -6,6 +6,7 @@ import (
 	"azyqs-auth-systems/models"
 	"azyqs-auth-systems/utils"
 	"errors"
+	"log"
 
 	"github.com/google/uuid"
 	"gorm.io/gorm"
@@ -13,6 +14,7 @@ import (
 
 // GetUserByID fetches user data by ID
 func GetUserByID(userID uuid.UUID) (*models.User, error) {
+	log.Printf("Fetching user with ID: %s", userID)
 	var user models.User
 	if err := config.DB.Where("id = ?", userID).First(&user).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
