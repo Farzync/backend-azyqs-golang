@@ -40,7 +40,6 @@ func JwtAuthentication(next http.Handler) http.Handler {
 			return
 		}
 
-		// Common format: "Bearer {token}"
 		splitted := strings.Split(tokenHeader, " ")
 		if len(splitted) != 2 {
 			writeJSON(w, http.StatusForbidden, "error", "token_invalid_format")
@@ -48,7 +47,7 @@ func JwtAuthentication(next http.Handler) http.Handler {
 		}
 
 		tokenPart := splitted[1]
-		userID, err := utils.ValidateJWT(tokenPart) // <- Ini sudah UUID
+		userID, err := utils.ValidateJWT(tokenPart)
 		if err != nil {
 			switch err.Error() {
 			case "token_expired":
@@ -61,8 +60,9 @@ func JwtAuthentication(next http.Handler) http.Handler {
 			return
 		}
 
-		// Tidak perlu lagi konversi ke UUID, langsung simpan ke context
-		ctx := context.WithValue(r.Context(), UserIDKey, userID)
+		userIDStr := userID.String() // Pastikan dikonversi ke string sebelum disimpan
+
+		ctx := context.WithValue(r.Context(), UserIDKey, userIDStr)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }
