@@ -23,7 +23,7 @@ var (
 func GenerateJWT(userID uuid.UUID) (string, error) {
 	claims := jwt.MapClaims{
 		"user_id": userID.String(),
-		"exp":     time.Now().Add(time.Hour * 72).Unix(), // Token valid for 72 hours
+		"exp":     time.Now().Add(time.Hour * 1).Unix(), // Token valid for 72 hours
 	}
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	tokenString, err := token.SignedString(SECRET_KEY)
