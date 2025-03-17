@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"azyqs-auth-systems/errors"
 	"azyqs-auth-systems/middlewares"
 	"azyqs-auth-systems/services"
 	"encoding/json"
@@ -24,58 +25,17 @@ func writeJSON(w http.ResponseWriter, statusCode int, status, message string, da
 	})
 }
 
-// Register: POST /auth/register
-func Register(w http.ResponseWriter, r *http.Request) {
-	var userInput struct {
-		Username string `json:"username"`
-		Name     string `json:"name"`
-		Email    string `json:"email"`
-		Password string `json:"password"`
-	}
-	if err := json.NewDecoder(r.Body).Decode(&userInput); err != nil {
-		writeJSON(w, http.StatusBadRequest, "error", "invalid_input", nil)
-		return
-	}
-
-	err := services.RegisterUser(userInput.Username, userInput.Name, userInput.Email, userInput.Password)
-	if err != nil {
-		writeJSON(w, http.StatusBadRequest, "error", err.Error(), nil)
-		return
-	}
-	writeJSON(w, http.StatusOK, "success", "registration_successful", nil)
-}
-
-// Login: POST /auth/login
-func Login(w http.ResponseWriter, r *http.Request) {
-	var input struct {
-		Username string `json:"username"`
-		Password string `json:"password"`
-	}
-	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
-		writeJSON(w, http.StatusBadRequest, "error", "invalid_input", nil)
-		return
-	}
-
-	token, err := services.LoginUser(input.Username, input.Password)
-	if err != nil {
-		writeJSON(w, http.StatusUnauthorized, "error", err.Error(), nil)
-		return
-	}
-
-	writeJSON(w, http.StatusOK, "success", "login_successful", map[string]string{"token": token})
-}
-
 // View Profile: GET /user/profile
 func ViewProfile(w http.ResponseWriter, r *http.Request) {
 	userID, ok := r.Context().Value(middlewares.UserIDKey).(uint)
 	if !ok {
-		writeJSON(w, http.StatusUnauthorized, "error", "user_id_not_found", nil)
+		writeJSON(w, http.StatusUnauthorized, "error", errors.ErrUserIDNotFound.Error(), nil)
 		return
 	}
 
 	user, err := services.GetUserByID(userID)
 	if err != nil {
-		writeJSON(w, http.StatusNotFound, "error", "user_not_found", nil)
+		writeJSON(w, http.StatusNotFound, "error", errors.ErrUserNotFound.Error(), nil)
 		return
 	}
 
@@ -86,7 +46,7 @@ func ViewProfile(w http.ResponseWriter, r *http.Request) {
 func EditProfile(w http.ResponseWriter, r *http.Request) {
 	userID, ok := r.Context().Value(middlewares.UserIDKey).(uint)
 	if !ok {
-		writeJSON(w, http.StatusUnauthorized, "error", "user_id_not_found", nil)
+		writeJSON(w, http.StatusUnauthorized, "error", errors.ErrUserIDNotFound.Error(), nil)
 		return
 	}
 
@@ -96,7 +56,7 @@ func EditProfile(w http.ResponseWriter, r *http.Request) {
 		Email    string `json:"email"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
-		writeJSON(w, http.StatusBadRequest, "error", "invalid_input", nil)
+		writeJSON(w, http.StatusBadRequest, "error", errors.ErrInvalidInput.Error(), nil)
 		return
 	}
 
@@ -112,7 +72,7 @@ func EditProfile(w http.ResponseWriter, r *http.Request) {
 func DeleteProfile(w http.ResponseWriter, r *http.Request) {
 	userID, ok := r.Context().Value(middlewares.UserIDKey).(uint)
 	if !ok {
-		writeJSON(w, http.StatusUnauthorized, "error", "user_id_not_found", nil)
+		writeJSON(w, http.StatusUnauthorized, "error", errors.ErrUserIDNotFound.Error(), nil)
 		return
 	}
 
@@ -120,7 +80,7 @@ func DeleteProfile(w http.ResponseWriter, r *http.Request) {
 		Password string `json:"password"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
-		writeJSON(w, http.StatusBadRequest, "error", "invalid_input", nil)
+		writeJSON(w, http.StatusBadRequest, "error", errors.ErrInvalidInput.Error(), nil)
 		return
 	}
 
@@ -136,7 +96,7 @@ func DeleteProfile(w http.ResponseWriter, r *http.Request) {
 func ChangePassword(w http.ResponseWriter, r *http.Request) {
 	userID, ok := r.Context().Value(middlewares.UserIDKey).(uint)
 	if !ok {
-		writeJSON(w, http.StatusUnauthorized, "error", "user_id_not_found", nil)
+		writeJSON(w, http.StatusUnauthorized, "error", errors.ErrUserIDNotFound.Error(), nil)
 		return
 	}
 
@@ -146,12 +106,12 @@ func ChangePassword(w http.ResponseWriter, r *http.Request) {
 		ConfirmNewPassword string `json:"confirm_new_password"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
-		writeJSON(w, http.StatusBadRequest, "error", "invalid_input", nil)
+		writeJSON(w, http.StatusBadRequest, "error", errors.ErrInvalidInput.Error(), nil)
 		return
 	}
 
 	if input.NewPassword != input.ConfirmNewPassword {
-		writeJSON(w, http.StatusBadRequest, "error", "password_mismatch", nil)
+		writeJSON(w, http.StatusBadRequest, "error", errors.ErrInvalidPassword.Error(), nil)
 		return
 	}
 
