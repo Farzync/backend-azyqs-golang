@@ -5,7 +5,6 @@ import (
 	"azyqs-auth-systems/middlewares"
 	"azyqs-auth-systems/services"
 	"encoding/json"
-	"log"
 	"net/http"
 
 	"github.com/google/uuid"
@@ -36,15 +35,11 @@ func ViewProfile(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	log.Printf("userIDStr: %s", userIDStr)
-
 	userID, err := uuid.Parse(userIDStr)
 	if err != nil {
 		writeJSON(w, http.StatusBadRequest, "error", errors.ErrInvalidUserID.Error(), nil)
 		return
 	}
-
-	log.Printf("userID: %s", userID)
 
 	user, err := services.GetUserByID(userID)
 	if err != nil {
@@ -84,6 +79,7 @@ func EditProfile(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusBadRequest, "error", err.Error(), nil)
 		return
 	}
+
 	writeJSON(w, http.StatusOK, "success", "profile_updated", nil)
 }
 
@@ -114,6 +110,7 @@ func DeleteProfile(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusBadRequest, "error", err.Error(), nil)
 		return
 	}
+
 	writeJSON(w, http.StatusOK, "success", "profile_deleted", nil)
 }
 
@@ -151,5 +148,6 @@ func ChangePassword(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusBadRequest, "error", err.Error(), nil)
 		return
 	}
+
 	writeJSON(w, http.StatusOK, "success", "password_changed", nil)
 }
