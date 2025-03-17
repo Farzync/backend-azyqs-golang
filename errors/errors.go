@@ -14,6 +14,7 @@ var (
 	ErrPasswordMismatch = errors.New("password_mismatch")
 	ErrInvalidInput     = errors.New("invalid_input")
 	ErrUserIDNotFound   = errors.New("user_id_not_found")
+	ErrInvalidUserID   = errors.New("user_id_is_invalid")
 	ErrUnauthorized     = errors.New("unauthorized")
 	ErrInternalServer   = errors.New("internal_server_error")
 )

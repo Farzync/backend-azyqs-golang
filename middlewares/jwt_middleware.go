@@ -34,7 +34,7 @@ const UserIDKey contextKey = "userID"
 func JwtAuthentication(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		tokenHeader := r.Header.Get("Authorization")
-		
+
 		if tokenHeader == "" {
 			writeJSON(w, http.StatusForbidden, "error", "token_not_found")
 			return
@@ -48,7 +48,7 @@ func JwtAuthentication(next http.Handler) http.Handler {
 		}
 
 		tokenPart := splitted[1]
-		userID, err := utils.ValidateJWT(tokenPart)
+		userID, err := utils.ValidateJWT(tokenPart) // <- Ini sudah UUID
 		if err != nil {
 			switch err.Error() {
 			case "token_expired":
@@ -61,7 +61,7 @@ func JwtAuthentication(next http.Handler) http.Handler {
 			return
 		}
 
-		// Pass the userID into the request context
+		// Tidak perlu lagi konversi ke UUID, langsung simpan ke context
 		ctx := context.WithValue(r.Context(), UserIDKey, userID)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})

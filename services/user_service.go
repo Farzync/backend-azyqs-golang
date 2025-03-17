@@ -7,13 +7,14 @@ import (
 	"azyqs-auth-systems/utils"
 	"errors"
 
+	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
 
 // GetUserByID fetches user data by ID
-func GetUserByID(userID uint) (*models.User, error) {
+func GetUserByID(userID uuid.UUID) (*models.User, error) {
 	var user models.User
-	if err := config.DB.First(&user, userID).Error; err != nil {
+	if err := config.DB.Where("id = ?", userID).First(&user).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, serviceErrors.ErrUserNotFound
 		}
@@ -23,9 +24,9 @@ func GetUserByID(userID uint) (*models.User, error) {
 }
 
 // UpdateUserProfile updates username, name, and email for a user
-func UpdateUserProfile(userID uint, newUsername, newName, newEmail string) error {
+func UpdateUserProfile(userID uuid.UUID, newUsername, newName, newEmail string) error {
 	var user models.User
-	if err := config.DB.First(&user, userID).Error; err != nil {
+	if err := config.DB.Where("id = ?", userID).First(&user).Error; err != nil {
 		return serviceErrors.ErrUserNotFound
 	}
 
@@ -62,9 +63,9 @@ func UpdateUserProfile(userID uint, newUsername, newName, newEmail string) error
 }
 
 // DeleteUser deletes a user after password confirmation
-func DeleteUser(userID uint, password string) error {
+func DeleteUser(userID uuid.UUID, password string) error {
 	var user models.User
-	if err := config.DB.First(&user, userID).Error; err != nil {
+	if err := config.DB.Where("id = ?", userID).First(&user).Error; err != nil {
 		return serviceErrors.ErrUserNotFound
 	}
 	if !utils.CheckPasswordHash(password, user.Password) {
@@ -77,9 +78,9 @@ func DeleteUser(userID uint, password string) error {
 }
 
 // ChangeUserPassword changes a user's password
-func ChangeUserPassword(userID uint, oldPassword, newPassword string) error {
+func ChangeUserPassword(userID uuid.UUID, oldPassword, newPassword string) error {
 	var user models.User
-	if err := config.DB.First(&user, userID).Error; err != nil {
+	if err := config.DB.Where("id = ?", userID).First(&user).Error; err != nil {
 		return serviceErrors.ErrUserNotFound
 	}
 	if !utils.CheckPasswordHash(oldPassword, user.Password) {

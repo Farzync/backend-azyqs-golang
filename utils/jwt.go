@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/golang-jwt/jwt/v4"
+	"github.com/google/uuid"
 )
 
 var SECRET_KEY = []byte("your_secret_key") // Replace with a secure secret key
@@ -19,9 +20,9 @@ var (
 )
 
 // GenerateJWT generates a JWT token based on userID
-func GenerateJWT(userID uint) (string, error) {
+func GenerateJWT(userID uuid.UUID) (string, error) {
 	claims := jwt.MapClaims{
-		"user_id": userID,
+		"user_id": userID.String(),
 		"exp":     time.Now().Add(time.Hour * 72).Unix(), // Token valid for 72 hours
 	}
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
@@ -33,7 +34,7 @@ func GenerateJWT(userID uint) (string, error) {
 }
 
 // ValidateJWT validates the token and returns the userID if valid
-func ValidateJWT(tokenString string) (uint, error) {
+func ValidateJWT(tokenString string) (uuid.UUID, error) {
 	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
 		// Ensure the signing method is HMAC
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
@@ -47,23 +48,27 @@ func ValidateJWT(tokenString string) (uint, error) {
 		if validationErr, ok := err.(*jwt.ValidationError); ok {
 			switch {
 			case validationErr.Errors&jwt.ValidationErrorMalformed != 0:
-				return 0, ErrTokenMalformed
+				return uuid.Nil, ErrTokenMalformed
 			case validationErr.Errors&jwt.ValidationErrorExpired != 0:
-				return 0, ErrTokenExpired
+				return uuid.Nil, ErrTokenExpired
 			default:
-				return 0, ErrTokenInvalid
+				return uuid.Nil, ErrTokenInvalid
 			}
 		}
-		return 0, ErrTokenInvalid
+		return uuid.Nil, ErrTokenInvalid
 	}
 
 	// Validate claims and extract userID
 	if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
-		if userIDFloat, ok := claims["user_id"].(float64); ok {
-			return uint(userIDFloat), nil
+		if userIDStr, ok := claims["user_id"].(string); ok {
+			userID, err := uuid.Parse(userIDStr)
+			if err != nil {
+				return uuid.Nil, ErrTokenPayload
+			}
+			return userID, nil
 		}
-		return 0, ErrTokenPayload
+		return uuid.Nil, ErrTokenPayload
 	}
 
-	return 0, ErrTokenInvalid
+	return uuid.Nil, ErrTokenInvalid
 }
