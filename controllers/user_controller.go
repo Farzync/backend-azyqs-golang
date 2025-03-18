@@ -4,6 +4,7 @@ import (
 	"azyqs-auth-systems/errors"
 	"azyqs-auth-systems/middlewares"
 	"azyqs-auth-systems/services"
+	"azyqs-auth-systems/validators"
 	"encoding/json"
 	"net/http"
 
@@ -74,6 +75,18 @@ func EditProfile(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// **VALIDASI USERNAME**
+	if err := validators.ValidateUsername(input.Username); err != nil {
+		writeJSON(w, http.StatusBadRequest, "error", err.Error(), nil)
+		return
+	}
+
+	// **VALIDASI EMAIL**
+	if err := validators.ValidateEmail(input.Email); err != nil {
+		writeJSON(w, http.StatusBadRequest, "error", err.Error(), nil)
+		return
+	}
+
 	err = services.UpdateUserProfile(userID, input.Username, input.Name, input.Email)
 	if err != nil {
 		writeJSON(w, http.StatusBadRequest, "error", err.Error(), nil)
@@ -139,7 +152,13 @@ func ChangePassword(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if input.NewPassword != input.ConfirmNewPassword {
-		writeJSON(w, http.StatusBadRequest, "error", errors.ErrInvalidPassword.Error(), nil)
+		writeJSON(w, http.StatusBadRequest, "error", "password_mismatch", nil)
+		return
+	}
+
+	// **VALIDASI PASSWORD BARU**
+	if err := validators.ValidatePassword(input.NewPassword); err != nil {
+		writeJSON(w, http.StatusBadRequest, "error", err.Error(), nil)
 		return
 	}
 
