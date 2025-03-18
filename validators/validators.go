@@ -4,6 +4,7 @@ import (
 	"errors"
 	"regexp"
 	"strings"
+	"unicode"
 )
 
 // Regex untuk validasi email
@@ -12,8 +13,8 @@ var emailRegex = regexp.MustCompile(`^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]
 // Regex untuk validasi username (huruf, angka, titik, tanpa titik di awal/akhir)
 var usernameRegex = regexp.MustCompile(`^[a-zA-Z0-9]+(\.[a-zA-Z0-9]+)*$`)
 
-// Regex untuk validasi password (minimal 8 karakter, harus ada huruf besar, kecil, angka, dan simbol)
-var passwordRegex = regexp.MustCompile(`^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{8,}$`)
+// Regex sederhana untuk validasi panjang password
+var passwordRegex = regexp.MustCompile(`^.{8,}$`)
 
 // ValidateEmail memastikan email dalam format yang benar
 func ValidateEmail(email string) error {
@@ -40,13 +41,41 @@ func ValidateUsername(username string) error {
 	return nil
 }
 
+// ValidateName memastikan nama sesuai aturan
+func ValidateName(name string) error {
+	name = strings.TrimSpace(name)
+	if len(name) < 2 {
+		return errors.New("name_too_short")
+	}
+	if len(name) > 32 {
+		return errors.New("name_too_long")
+	}
+	return nil
+}
+
 // ValidatePassword memastikan password memenuhi syarat
 func ValidatePassword(password string) error {
-	if len(password) < 8 {
+	if !passwordRegex.MatchString(password) {
 		return errors.New("password_too_short")
 	}
-	if !passwordRegex.MatchString(password) {
+
+	var hasUpper, hasLower, hasNumber, hasSpecial bool
+	for _, char := range password {
+		switch {
+		case unicode.IsUpper(char):
+			hasUpper = true
+		case unicode.IsLower(char):
+			hasLower = true
+		case unicode.IsDigit(char):
+			hasNumber = true
+		case unicode.IsPunct(char) || unicode.IsSymbol(char):
+			hasSpecial = true
+		}
+	}
+
+	if !hasUpper || !hasLower || !hasNumber || !hasSpecial {
 		return errors.New("password_must_include_upper_lower_digit_special")
 	}
+
 	return nil
 }
