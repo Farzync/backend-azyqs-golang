@@ -21,25 +21,28 @@ func Register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// **VALIDASI USERNAME**
+	// Validasi input pengguna
 	if err := validators.ValidateUsername(userInput.Username); err != nil {
 		writeJSON(w, http.StatusBadRequest, "error", err.Error(), nil)
 		return
 	}
 
-	// **VALIDASI EMAIL**
+	if err := validators.ValidateName(userInput.Name); err != nil {
+		writeJSON(w, http.StatusBadRequest, "error", err.Error(), nil)
+		return
+	}
+
 	if err := validators.ValidateEmail(userInput.Email); err != nil {
 		writeJSON(w, http.StatusBadRequest, "error", err.Error(), nil)
 		return
 	}
 
-	// **VALIDASI PASSWORD**
 	if err := validators.ValidatePassword(userInput.Password); err != nil {
 		writeJSON(w, http.StatusBadRequest, "error", err.Error(), nil)
 		return
 	}
 
-	// **LANJUT KE SERVICE**
+	// Lanjut ke service
 	err := services.RegisterUser(userInput.Username, userInput.Name, userInput.Email, userInput.Password)
 	if err != nil {
 		switch err {
@@ -67,19 +70,18 @@ func Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// **VALIDASI USERNAME**
+	// Validasi input pengguna
 	if err := validators.ValidateUsername(input.Username); err != nil {
 		writeJSON(w, http.StatusBadRequest, "error", err.Error(), nil)
 		return
 	}
 
-	// **VALIDASI PASSWORD (hanya memastikan panjangnya valid, karena login tidak perlu syarat kompleks)**
-	if len(input.Password) < 8 {
-		writeJSON(w, http.StatusBadRequest, "error", "password_too_short", nil)
+	if err := validators.ValidatePassword(input.Password); err != nil {
+		writeJSON(w, http.StatusBadRequest, "error", err.Error(), nil)
 		return
 	}
 
-	// **LANJUT KE SERVICE**
+	// Lanjut ke service
 	token, err := services.LoginUser(input.Username, input.Password)
 	if err != nil {
 		switch err {

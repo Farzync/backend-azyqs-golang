@@ -75,16 +75,26 @@ func EditProfile(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// **VALIDASI USERNAME**
-	if err := validators.ValidateUsername(input.Username); err != nil {
-		writeJSON(w, http.StatusBadRequest, "error", err.Error(), nil)
-		return
+	// Validasi input pengguna
+	if input.Username != "" {
+		if err := validators.ValidateUsername(input.Username); err != nil {
+			writeJSON(w, http.StatusBadRequest, "error", err.Error(), nil)
+			return
+		}
 	}
 
-	// **VALIDASI EMAIL**
-	if err := validators.ValidateEmail(input.Email); err != nil {
-		writeJSON(w, http.StatusBadRequest, "error", err.Error(), nil)
-		return
+	if input.Name != "" {
+		if err := validators.ValidateName(input.Name); err != nil {
+			writeJSON(w, http.StatusBadRequest, "error", err.Error(), nil)
+			return
+		}
+	}
+
+	if input.Email != "" {
+		if err := validators.ValidateEmail(input.Email); err != nil {
+			writeJSON(w, http.StatusBadRequest, "error", err.Error(), nil)
+			return
+		}
 	}
 
 	err = services.UpdateUserProfile(userID, input.Username, input.Name, input.Email)
@@ -115,6 +125,12 @@ func DeleteProfile(w http.ResponseWriter, r *http.Request) {
 	}
 	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
 		writeJSON(w, http.StatusBadRequest, "error", errors.ErrInvalidInput.Error(), nil)
+		return
+	}
+
+	// Validasi password
+	if err := validators.ValidatePassword(input.Password); err != nil {
+		writeJSON(w, http.StatusBadRequest, "error", err.Error(), nil)
 		return
 	}
 
@@ -151,14 +167,19 @@ func ChangePassword(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if input.NewPassword != input.ConfirmNewPassword {
-		writeJSON(w, http.StatusBadRequest, "error", "password_mismatch", nil)
+	// Validasi password
+	if err := validators.ValidatePassword(input.OldPassword); err != nil {
+		writeJSON(w, http.StatusBadRequest, "error", err.Error(), nil)
 		return
 	}
 
-	// **VALIDASI PASSWORD BARU**
 	if err := validators.ValidatePassword(input.NewPassword); err != nil {
 		writeJSON(w, http.StatusBadRequest, "error", err.Error(), nil)
+		return
+	}
+
+	if input.NewPassword != input.ConfirmNewPassword {
+		writeJSON(w, http.StatusBadRequest, "error", "password_mismatch", nil)
 		return
 	}
 
